@@ -1,0 +1,94 @@
+<?php
+
+define('WWM_DEVEL_MC_DUMMY_KEY', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+
+/**
+ * Implements hook_form_FORM_ID_alter()
+ */
+function wwm_devel_form_system_site_maintenance_mode_alter(&$form, &$form_state, $form_id) {
+  
+  if (module_exists('mailchimp')) {
+
+    $mailchimp_key = variable_get('mailchimp_api_key', '');
+    $form['mailchimp_api_setting'] = array(
+      '#title' => t('MailChimp API Key'),
+      '#type' => 'radios',
+      '#options' => array(
+        'default' => t('Default'),
+        'clear' => t('Clear it'),
+        'dummy' => t('Set dummy key'),
+      ),
+    );
+    if (empty($mailchimp_key)) {
+      $form['mailchimp_api_setting']['#default_value'] = 'clear';
+      $form['mailchimp_api_setting']['#options']['default'] .= ' (restore original key)';
+    }
+    else if ($mailchimp_key == WWM_DEVEL_MC_DUMMY_KEY) {
+      $form['mailchimp_api_setting']['#default_value'] = 'dummy';
+      $form['mailchimp_api_setting']['#options']['default'] .= ' (restore original key)';
+    }
+    else {
+      $form['mailchimp_api_setting']['#default_value'] = 'default';
+      $form['mailchimp_api_setting']['#options']['default'] .= ' (leave as it is)';
+    }
+  }
+  if (module_exists('reroute_email')) {
+    // These are copied from reroute_email module.
+
+    // In case of absence of the 'variable' module, the inc file should be loaded
+    // manually.
+    module_load_include('inc', 'reroute_email', 'reroute_email.variable');
+
+    // Getting titles and descriptions of variables. We will not use foreach()
+    // loop of $variables in the form below for better code readability.
+    // @see reroute_email_variable_info()
+    $variables = module_invoke('reroute_email', 'variable_info', array());
+
+    // Checkbox to enable or disable email rerouting.
+    $form[REROUTE_EMAIL_ENABLE] = array(
+      '#type' => 'checkbox',
+      '#title' => $variables[REROUTE_EMAIL_ENABLE]['title'],
+      '#default_value' => variable_get(REROUTE_EMAIL_ENABLE, 0),
+      '#description' => $variables[REROUTE_EMAIL_ENABLE]['description'],
+    );
+
+    // Define #states to be used for visibility of all variables.
+    $states = array(
+      'visible' => array(':input[name=' . REROUTE_EMAIL_ENABLE . ']' => array('checked' => TRUE)),
+    );
+
+    // Text field for email rerouting targets.
+    $form[REROUTE_EMAIL_ADDRESS] = array(
+      '#type' => 'textfield',
+      '#title' => $variables[REROUTE_EMAIL_ADDRESS]['title'],
+      '#default_value' => variable_get(REROUTE_EMAIL_ADDRESS, variable_get('site_mail', ini_get('sendmail_from'))),
+      '#description' => $variables[REROUTE_EMAIL_ADDRESS]['description'],
+      '#states' => $states,
+      '#element_validate' => array('reroute_email_element_validate_addresses'),
+    );
+  }
+  $form['#submit'][] = 'wwm_devel_form_system_site_maintenance_mode_submit';
+}
+
+function wwm_devel_form_system_site_maintenance_mode_submit($form, &$form_state) {
+  if ($form_state['values']['mailchimp_api_setting']) {
+    if ($form['mailchimp_api_setting']['#default_value'] == 'default' && $form_state['values']['mailchimp_api_setting'] != 'default') {
+      // Backup original MailChimp key.
+      variable_set('wwm_devel_mailchimp_api_key', variable_get('mailchimp_api_key'));
+    }
+    else if ($form['mailchimp_api_setting']['#default_value'] != 'default' && $form_state['values']['mailchimp_api_setting'] == 'default') {
+      // Restore original MailChimp key.
+      variable_set('mailchimp_api_key', variable_get('wwm_devel_mailchimp_api_key'));
+      drupal_set_message(t('Restored original MailChimp API Key.'));
+    }
+
+    if ($form_state['values']['mailchimp_api_setting'] == 'clear')  {
+      variable_set('mailchimp_api_key', '');
+      drupal_set_message(t('MailChimp API Key has been cleared.'));
+    }
+    else if ($form_state['values']['mailchimp_api_setting'] == 'dummy')  {
+      variable_set('mailchimp_api_key', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+      drupal_set_message(t('MailChimp API Key has been set with dummy value.'));
+    }
+  }
+}
