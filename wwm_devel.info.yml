@@ -1,0 +1,4 @@
+name: WWM Development
+type: module
+description: PTo help managing development sites
+core_version_requirement: ^8 || ^9

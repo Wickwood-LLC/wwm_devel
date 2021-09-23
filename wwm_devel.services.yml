@@ -1,0 +1,4 @@
+services:
+  maintenance_mode:
+    class: Drupal\wwm_devel\Site\WWMDevelMaintenanceMode
+    arguments: ['@state']
