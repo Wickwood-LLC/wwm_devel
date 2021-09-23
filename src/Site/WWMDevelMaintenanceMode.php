@@ -17,7 +17,18 @@ class WWMDevelMaintenanceMode extends MaintenanceMode {
    */
   public function applies(RouteMatchInterface $route_match) {
     $config = \Drupal::service('config.factory')->get('wwm_devel.settings');
-    return parent::applies($route_match) || $config->get('maintenance_mode');
+
+    if (!parent::applies($route_match) && !$config->get('maintenance_mode')) {
+      return FALSE;
+    }
+
+    if ($route = $route_match->getRouteObject()) {
+      if ($route->getOption('_maintenance_access')) {
+        return FALSE;
+      }
+    }
+
+    return TRUE;
   }
 
 }
