@@ -7,3 +7,9 @@ wwm_devel.settings:
     maintenance_mode:
       type: integer
       label: 'Maintenance mode'
+    mailchimp_api_setting:
+      type: string
+      label: MailChimp API Key Setting
+    mailchimp_api_key:
+      type: string
+      label: MailChimp API Key (backup)

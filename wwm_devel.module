@@ -3,6 +3,8 @@
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
+define('WWM_DEVEL_MC_DUMMY_KEY', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+
 /**
  * Implements hook_form_FORM_ID_alter().
  */
@@ -23,6 +25,33 @@ function wwm_devel_form_system_site_maintenance_mode_alter(&$form, FormStateInte
     '#description' => t('Visitors will only see the maintenance mode message. Only users with the "@permission-label" <a href=":permissions-url">permission</a> will be able to access the site. Authorized users can log in directly via the <a href=":user-login">user login</a> page.', ['@permission-label' => $permission_label, ':permissions-url' => Url::fromRoute('user.admin_permissions')->toString(), ':user-login' => Url::fromRoute('user.login')->toString()]),
   ];
 
+  if (\Drupal::moduleHandler()->moduleExists('mailchimp')) {
+
+    $mailchimp_key = \Drupal::service('config.factory')->get('mailchimp.settings')->get('api_key');
+    $form['wwm_devel']['mailchimp_api_setting'] = array(
+      '#title' => t('MailChimp API Key'),
+      '#type' => 'radios',
+      '#options' => array(
+        'default' => t('Default'),
+        'clear' => t('Clear it'),
+        'dummy' => t('Set dummy key'),
+      ),
+    );
+    if (empty($mailchimp_key)) {
+      $form['wwm_devel']['mailchimp_api_setting']['#default_value'] = 'clear';
+      $form['wwm_devel']['mailchimp_api_setting']['#options']['default'] .= ' (restore the original key)';
+    }
+    else if ($mailchimp_key == WWM_DEVEL_MC_DUMMY_KEY) {
+      $form['wwm_devel']['mailchimp_api_setting']['#default_value'] = 'dummy';
+      $form['wwm_devel']['mailchimp_api_setting']['#options']['default'] .= ' (restore the original key)';
+    }
+    else {
+      $form['wwm_devel']['mailchimp_api_setting']['#default_value'] = 'default';
+      $form['wwm_devel']['mailchimp_api_setting']['#options']['default'] .= ' (leave as it is)';
+    }
+
+  }
+
   $form['#submit'][] = 'wwm_devel_system_site_maintenance_mode_submit';
 }
 
@@ -31,6 +60,33 @@ function wwm_devel_form_system_site_maintenance_mode_alter(&$form, FormStateInte
  */
 function wwm_devel_system_site_maintenance_mode_submit($form, FormStateInterface $form_state) {
   $config = \Drupal::service('config.factory')->getEditable('wwm_devel.settings');
-  $config->set('maintenance_mode', $form_state->getValue('wwm_devel_maintenance_mode'))
-    ->save();
+  $config->set('maintenance_mode', $form_state->getValue('wwm_devel_maintenance_mode'));
+
+  if (\Drupal::moduleHandler()->moduleExists('mailchimp')) {
+    $config->set('mailchimp_api_setting', $form_state->getValue('mailchimp_api_setting'));
+
+    $mailchimp_config = \Drupal::service('config.factory')->getEditable('mailchimp.settings');
+    $mailchimp_api_setting = $form_state->getValue('mailchimp_api_setting');
+    if ($form['wwm_devel']['mailchimp_api_setting']['#default_value'] == 'default' && $mailchimp_api_setting != 'default') {
+      // Backup original MailChimp key.
+      $config->set('mailchimp_api_key', $mailchimp_config->get('api_key'));
+    }
+    else if ($form['wwm_devel']['mailchimp_api_setting']['#default_value'] != 'default' && $mailchimp_api_setting == 'default') {
+      // Restore original MailChimp key.
+      $mailchimp_config->set('api_key', $config->get('mailchimp_api_key'));
+      \Drupal::messenger()->addStatus(t('Restored original MailChimp API Key.'));
+    }
+
+    if ($mailchimp_api_setting == 'clear')  {
+      $mailchimp_config->set('api_key', '');
+      \Drupal::messenger()->addStatus(t('MailChimp API Key has been cleared.'));
+    }
+    else if ($mailchimp_api_setting == 'dummy')  {
+      $mailchimp_config->set('api_key', WWM_DEVEL_MC_DUMMY_KEY);
+      \Drupal::messenger()->addStatus(t('MailChimp API Key has been set with the dummy value.'));
+    }
+    $mailchimp_config->save();
+  }
+
+  $config->save();
 }
