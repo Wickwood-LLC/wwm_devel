@@ -90,3 +90,15 @@ function wwm_devel_system_site_maintenance_mode_submit($form, FormStateInterface
 
   $config->save();
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function wwm_devel_form_mailchimp_admin_settings_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $config = \Drupal::service('config.factory')->get('wwm_devel.settings');
+  $mailchimp_api_setting = $config->get('mailchimp_api_setting');
+  if ($mailchimp_api_setting == 'clear' || $mailchimp_api_setting == 'dummy') {
+    $form['api_key']['#attributes']['disabled'] = TRUE;
+    $form['api_key']['#description'] .= t(' This has been disabled because it has been to clear or dummy by WWM Devel setting at <a href="@url">maintenance mode settings page.</a>', ['@url' => Url::fromRoute('system.site_maintenance_mode')->toString()]);
+  }
+}
