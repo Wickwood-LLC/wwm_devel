@@ -1,0 +1,5 @@
+wwm_devel know config saved:
+  title: 'Allow to know when a config object is saved'
+  description: 'Allow the user know when a config object is saved. It will show status message whenever a config object is saved.'
+  restrict access: true
+
