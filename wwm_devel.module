@@ -1,5 +1,6 @@
 <?php
 
+use Drupal\reroute_email\Constants\RerouteEmailConstants;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
@@ -54,26 +55,26 @@ function wwm_devel_form_system_site_maintenance_mode_alter(&$form, FormStateInte
 
   if (\Drupal::moduleHandler()->moduleExists('reroute_email')) {
     $reroute_config = \Drupal::service('config.factory')->get('reroute_email.settings');
-    $form['wwm_devel'][\Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ENABLE] = [
+    $form['wwm_devel'][RerouteEmailConstants::REROUTE_EMAIL_ENABLE] = [
       '#type' => 'checkbox',
       '#title' => t('Enable rerouting'),
-      '#default_value' => $reroute_config->get(\Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ENABLE),
+      '#default_value' => $reroute_config->get(RerouteEmailConstants::REROUTE_EMAIL_ENABLE),
       '#description' => t('Check this box if you want to enable email rerouting. Uncheck to disable rerouting.'),
       '#config' => [
-        'key' => 'reroute_email.settings:' . \Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ENABLE,
+        'key' => 'reroute_email.settings:' . RerouteEmailConstants::REROUTE_EMAIL_ENABLE,
       ],
     ];
 
     $states = [
-      'visible' => [':input[name=' . \Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ENABLE . ']' => ['checked' => TRUE]],
+      'visible' => [':input[name=' . RerouteEmailConstants::REROUTE_EMAIL_ENABLE . ']' => ['checked' => TRUE]],
     ];
 
-    $default_address = $reroute_config->get(\Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ADDRESS);
+    $default_address = $reroute_config->get(RerouteEmailConstants::REROUTE_EMAIL_ADDRESS);
     if (NULL === $default_address) {
       $default_address = \Drupal::service('config.factory')->get('system.site')->get('mail');
     }
 
-    $form['wwm_devel'][\Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ADDRESS] = [
+    $form['wwm_devel'][RerouteEmailConstants::REROUTE_EMAIL_ADDRESS] = [
       '#type' => 'textarea',
       '#rows' => 2,
       '#title' => t('Rerouting email addresses'),
@@ -87,7 +88,7 @@ function wwm_devel_form_system_site_maintenance_mode_alter(&$form, FormStateInte
       '#pre_render' => ['Drupal\reroute_email\Form\SettingsForm::textareaRowsValue'],
       '#states' => $states,
       '#config' => [
-        'key' => 'reroute_email.settings:' . \Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ADDRESS,
+        'key' => 'reroute_email.settings:' . RerouteEmailConstants::REROUTE_EMAIL_ADDRESS,
       ],
     ];
   }
@@ -152,8 +153,8 @@ function wwm_devel_system_site_maintenance_mode_submit($form, FormStateInterface
 
   if (\Drupal::moduleHandler()->moduleExists('reroute_email')) {
     \Drupal::service('config.factory')->getEditable('reroute_email.settings')
-      ->set(\Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ENABLE, $form_state->getValue(\Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ENABLE))
-      ->set(\Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ADDRESS, $form_state->getValue(\Drupal\reroute_email\Constants\RerouteEmailConstants::REROUTE_EMAIL_ADDRESS))
+      ->set(RerouteEmailConstants::REROUTE_EMAIL_ENABLE, $form_state->getValue(RerouteEmailConstants::REROUTE_EMAIL_ENABLE))
+      ->set(RerouteEmailConstants::REROUTE_EMAIL_ADDRESS, $form_state->getValue(RerouteEmailConstants::REROUTE_EMAIL_ADDRESS))
       ->save();
   }
 
