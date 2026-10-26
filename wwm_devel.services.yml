@@ -1,7 +1,7 @@
 services:
   maintenance_mode:
     class: Drupal\wwm_devel\Site\WWMDevelMaintenanceMode
-    arguments: ['@state']
+    arguments: ['@state', '@config.factory']
   wwm_devel.config_watcher:
     class: Drupal\wwm_devel\EventSubscriber\ConfigWatcher
     arguments: ['@current_user', '@messenger']
